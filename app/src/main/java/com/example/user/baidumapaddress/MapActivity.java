@@ -1,5 +1,8 @@
 package com.example.user.baidumapaddress;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.content.Context;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -78,7 +81,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
      * @return
      */
     protected MyLocationConfiguration.LocationMode initLocationMode() {
-        return MyLocationConfiguration.LocationMode.FOLLOWING;
+        return MyLocationConfiguration.LocationMode.NORMAL;
     }
 
     /**
@@ -355,6 +358,18 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
             }
         }
     }
+
+    //简单位移动画
+    public static void animatorSet(Context context, View view) {
+        AnimatorSet animationSet = new AnimatorSet();
+        ObjectAnimator animator = ObjectAnimator.ofFloat(view, "translationY", 0, DensityUtils.dp2px(context, -30));
+        ObjectAnimator animator1 = ObjectAnimator.ofFloat(view, "translationY", -30, DensityUtils.dp2px(context, 0));
+        animationSet.playTogether(animator);
+        animationSet.playTogether(animator1);
+        animationSet.setDuration(500);
+        animationSet.start();
+    }
+
 
 
 }
