@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.user.baidumapaddress.MapActivity">
+
+    <com.baidu.mapapi.map.MapView
+        android:id="@+id/bd_map"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"></com.baidu.mapapi.map.MapView>
+
+    <RelativeLayout
+        android:id="@+id/rl_complete_location"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_marginBottom="30dp"
+        android:paddingBottom="40dp">
+
+        <RelativeLayout
+            android:id="@+id/ll_dingwei"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:background="@mipmap/map_icon_fabiao_bg"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_complete_location"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="15dp"
+                android:gravity="center"
+                android:text="定位这里"
+                android:textColor="@color/ashen" />
+
+
+        </RelativeLayout>
+
+        <ImageView
+            android:id="@+id/iv_current"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/ll_dingwei"
+            android:layout_centerHorizontal="true"
+            android:src="@mipmap/map_icon_dangqian" />
+
+    </RelativeLayout>
+
+    <com.example.user.baidumapaddress.ui.InterceptTouchView
+        android:id="@+id/ll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="16dp"
+        android:background="@android:color/white"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_address"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:gravity="center"
+            android:background="@android:color/white"
+            tools:text="河南省郑州市中原区秦岭路和互助路交叉口富丽家园7幢1单元" />
+
+        <Button
+            android:id="@+id/btn_sure"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="确定" />
+    </com.example.user.baidumapaddress.ui.InterceptTouchView>
+
+    <ImageView
+        android:id="@+id/iv_location"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/ll"
+        android:layout_marginLeft="16dp"
+        android:src="@mipmap/map_icon_jiaozhundingwei"
+
+        />
+</RelativeLayout>
