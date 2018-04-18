@@ -3,19 +3,20 @@ package com.example.user.baidumapaddress;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Point;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.baidu.location.BDAbstractLocationListener;
 import com.baidu.location.BDLocation;
-import com.baidu.location.BDLocationListener;
 import com.baidu.location.LocationClient;
 import com.baidu.location.LocationClientOption;
+import com.baidu.mapapi.BMapManager;
 import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
@@ -34,9 +35,15 @@ import com.baidu.mapapi.radar.RadarNearbySearchOption;
 import com.baidu.mapapi.radar.RadarSearchError;
 import com.baidu.mapapi.radar.RadarSearchListener;
 import com.baidu.mapapi.radar.RadarSearchManager;
-import com.baidu.mapapi.search.route.RoutePlanSearch;
+import com.baidu.mapapi.search.core.SearchResult;
+import com.baidu.mapapi.search.geocode.GeoCodeResult;
+import com.baidu.mapapi.search.geocode.GeoCoder;
+import com.baidu.mapapi.search.geocode.OnGetGeoCoderResultListener;
+import com.baidu.mapapi.search.geocode.ReverseGeoCodeOption;
+import com.baidu.mapapi.search.geocode.ReverseGeoCodeResult;
 
-public class MapActivity extends AppCompatActivity implements View.OnClickListener , RadarSearchListener, MyOrientationListener.OnOrientationListener {
+
+public class MapActivity extends AppCompatActivity implements View.OnClickListener , RadarSearchListener, MyOrientationListener.OnOrientationListener , OnGetGeoCoderResultListener {
 
     private BaiduMap mBaiduMap;
     private MapView mMapView;
@@ -53,20 +60,64 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
     private float orientation_x = 100f;
     private MyOrientationListener orientationListener;
     private LatLng lastLatLng;
+    private RelativeLayout rlCompleteLocation;
+    private BMapManager mapManager;
+    private GeoCoder mSearch;
+    private RelativeLayout mTvdingwei;
+
 
     @Override
-
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SDKInitializer.initialize(getApplicationContext());
         setContentView(R.layout.activity_map);
+        // 初始化MapActivity
+        mapManager = new BMapManager();
+        // init方法的第一个参数需填入申请的API Key
+        mapManager.init();
+
         initView();
         initListener();
         initMap();
 
+        // 初始化搜索模块，注册事件监听
+        mSearch = GeoCoder.newInstance();
+        mSearch.setOnGetGeoCodeResultListener(this);
+
     }
 
+    private BaiduMap.OnMapStatusChangeListener changeListener=new BaiduMap.OnMapStatusChangeListener() {
 
+        @Override
+        public void onMapStatusChangeStart(MapStatus arg0) {
+            mTvdingwei.setVisibility(View.INVISIBLE);
+        }
+        @Override
+        public void onMapStatusChangeStart(MapStatus mapStatus, int i) {
+        }
+
+        @Override
+        public void onMapStatusChange(MapStatus arg0) {
+        }
+
+        @Override
+        public void onMapStatusChangeFinish(MapStatus arg0) {
+            //此处进行操作
+            int[] location = new int[2];
+            mMapView.getLocationOnScreen(location);
+            Point p=new Point(location[0]+mMapView.getWidth()/2, location[1]+mMapView.getHeight()/2);
+            //TODO 已经获取到屏幕中心经纬度，可上传或者地理转码
+            LatLng latLng=new LatLng(arg0.target.latitude,arg0.target.longitude);
+            Log.i("location",latLng.toString());
+            mTvdingwei.setVisibility(View.VISIBLE);
+            animatorSet(MapActivity.this,rlCompleteLocation);
+           // Toast.makeText(MapActivity.this,latLng.toString(),Toast.LENGTH_SHORT).show();
+            // 反Geo搜索
+            mSearch.reverseGeoCode(new ReverseGeoCodeOption()
+                    .location(latLng).newVersion(0));
+        }
+
+    };
     /**
      * 指定定位图标，默认为电动车
      *
@@ -91,6 +142,8 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         mIvLocation = findViewById(R.id.iv_location);
         mAddress = findViewById(R.id.tv_address);
         mMapView = findViewById(R.id.bd_map);
+        mTvdingwei = findViewById(R.id.ll_dingwei);
+        rlCompleteLocation = findViewById(R.id.rl_complete_location);
         // 不显示缩放比例尺
         mMapView.showZoomControls(false);
         // 不显示百度地图Logo
@@ -99,6 +152,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         mBaiduMap = mMapView.getMap();
         mBaiduMap.setMyLocationConfiguration(new MyLocationConfiguration(initLocationMode(), true, BitmapDescriptorFactory.fromResource(initDescriptor())));
         mBaiduMap.setMyLocationEnabled(true);
+        mBaiduMap.setOnMapStatusChangeListener(changeListener);
         refreshLocation(true);
         // 初始化传感器
         initOritationListener();
@@ -191,6 +245,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
         super.onDestroy();
         //在activity执行onDestroy时执行mMapView.onDestroy()，实现地图生命周期管理
         mMapView.onDestroy();
+
     }
 
     @Override
@@ -242,6 +297,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
     }
 
 
+
     //自定义的定位监听
     private class MyLocationListener extends BDAbstractLocationListener {
         @Override
@@ -254,6 +310,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
                     .latitude(location.getLatitude())
                     .longitude(location.getLongitude())
                     .build();
+
             mBaiduMap.setMyLocationData(data);
             lastLatLng=new LatLng(location.getLatitude(),location.getLongitude());
             mCurrentLantitude=location.getLatitude();
@@ -265,7 +322,7 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
                 //mBaiduMap.setMapStatus(status);//直接到中间
                 mBaiduMap.animateMapStatus(status);//动画的方式到中间
                 isFirstLocation = false;
-                mAddress.setText("位置：" + location.getAddrStr());
+
                 initRadar(ll);
 
 //                Toast.makeText(MapActivity.this, "位置：" + location.getAddrStr(), Toast.LENGTH_LONG).show();
@@ -362,12 +419,35 @@ public class MapActivity extends AppCompatActivity implements View.OnClickListen
     //简单位移动画
     public static void animatorSet(Context context, View view) {
         AnimatorSet animationSet = new AnimatorSet();
-        ObjectAnimator animator = ObjectAnimator.ofFloat(view, "translationY", 0, DensityUtils.dp2px(context, -30));
-        ObjectAnimator animator1 = ObjectAnimator.ofFloat(view, "translationY", -30, DensityUtils.dp2px(context, 0));
+        ObjectAnimator animator = ObjectAnimator.ofFloat(view, "translationY", 0, DensityUtils.dp2px(context, -50));
+        ObjectAnimator animator1 = ObjectAnimator.ofFloat(view, "translationY", -50, DensityUtils.dp2px(context, 0));
         animationSet.playTogether(animator);
         animationSet.playTogether(animator1);
         animationSet.setDuration(500);
         animationSet.start();
+    }
+
+    @Override
+    public void onGetGeoCodeResult(GeoCodeResult geoCodeResult) {
+
+    }
+
+    @Override
+    public void onGetReverseGeoCodeResult(ReverseGeoCodeResult result) {
+        if (result == null || result.error != SearchResult.ERRORNO.NO_ERROR) {
+            Toast.makeText(MapActivity.this, "抱歉，未能找到结果", Toast.LENGTH_SHORT)
+                    .show();
+            return;
+        }
+//        mBaiduMap.clear();
+//        mBaiduMap.addOverlay(new MarkerOptions().position(result.getLocation())
+//                .icon(BitmapDescriptorFactory
+//                        .fromResource(R.mipmap.gerendingwei)));
+//        mBaiduMap.setMapStatus(MapStatusUpdateFactory.newLatLng(result
+//                .getLocation()));
+       // Toast.makeText(MapActivity.this, result.getAddress()+" adcode: "+result.getAdcode(),Toast.LENGTH_LONG).show();
+
+        mAddress.setText("位置：" + result.getAddress());
     }
 
 
